@@ -101,6 +101,10 @@ def api_start_game():
             "current_mineral": question
         }
 
+        # Если это режим "По фото", находим реальное имя файла
+    if mode == 'guess_photo':
+        game_state['current_mineral']['real_image'] = get_real_image_name(game_state['current_mineral']['name'])
+        
     return game_state
 
 
