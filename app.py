@@ -1,3 +1,4 @@
+from minerals_db import MINERALS_DB, get_real_image_name
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import datetime
 from database import init_db, check_user, save_result, get_user_results, get_admin_stats
