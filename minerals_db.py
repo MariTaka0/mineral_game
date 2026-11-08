@@ -1,6 +1,29 @@
 # minerals_db.py
 # База данных минералов для игры «Угадай минерал»
+import os
 
+def get_real_image_name(mineral_name):
+    """Ищет реальный файл картинки в папке static/images"""
+    # Приводим название к нижнему регистру, меняем пробелы на подчеркивания
+    base_name = mineral_name.lower().replace(' ', '_').replace('ё', 'е')
+    
+    # Путь к папке с картинками
+    img_dir = os.path.join('static', 'images')
+    
+    if os.path.exists(img_dir):
+        for filename in os.listdir(img_dir):
+            # Приводим имя файла к нижнему регистру для сравнения
+            file_lower = filename.lower()
+            # Отделяем имя от расширения (например, "пирит" и ".jpg")
+            name_only, ext = os.path.splitext(file_lower)
+            
+            # Если имя совпадает (без учета расширения) — возвращаем реальное имя файла
+            if name_only == base_name:
+                return filename
+    
+    # Если ничего не нашли, возвращаем заглушку (или можно вернуть стандартное имя)
+    return f"{base_name}.jpg"
+    
 MINERALS_DB = [
     # ============ САМОРОДНЫЕ ============
     {
