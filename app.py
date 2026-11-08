@@ -1,9 +1,8 @@
-from minerals_db import MINERALS_DB, get_real_image_name
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import datetime
 from database import init_db, check_user, save_result, get_user_results, get_admin_stats
 from game_logic import GameLogic
-from minerals_db import MINERALS_DB
+from minerals_db import MINERALS_DB, get_real_image_name
 from quiz_db import QUIZ_QUESTIONS
 
 app = Flask(__name__)
@@ -86,6 +85,7 @@ def api_start_game():
     game_state = game_logic.start_new_game(mode)
     session['game_state'] = game_state
 
+    # Если это викторина, сразу подгружаем первый вопрос
     if mode == 'quiz':
         question = game_logic.get_quiz_question([])
         game_state['current_question'] = question
@@ -101,10 +101,11 @@ def api_start_game():
             "current_mineral": question
         }
 
-        # Если это режим "По фото", находим реальное имя файла
+    # Если это режим "По фото", находим реальное имя файла картинки
     if mode == 'guess_photo':
         game_state['current_mineral']['real_image'] = get_real_image_name(game_state['current_mineral']['name'])
-        
+        session['game_state'] = game_state # Обновляем сессию с новым именем картинки
+
     return game_state
 
 
@@ -204,6 +205,12 @@ def api_next_round():
         display_item = {"question": current_item['question']}
     else:
         display_item = game_state['current_mineral']
+        # ВАЖНО: Если это режим "По фото", ищем картинку для нового раунда!
+        if game_type == 'guess_photo':
+            display_item['real_image'] = get_real_image_name(display_item['name'])
+            # Сохраняем обновленное состояние в сессию, чтобы при следующем запросе картинка не потерялась
+            game_state['current_mineral'] = display_item
+            session['game_state'] = game_state
 
     return {
         "game_type": game_type,
