@@ -93,7 +93,8 @@
                 infoDiv.innerHTML = `<p>💡 Подсказка: ${item.hints[0]}</p>`;
                 // Формируем имя картинки на основе названия минерала
                 // (например, "Халькопирит" -> "халькопирит.jpg")
-                const imgName = item.name.toLowerCase().replace(/ /g, '_').replace('ё', 'е') + '.jpg';
+                // Если сервер нашел точное имя файла, используем его
+                const imgName = item.real_image || (item.name.toLowerCase().replace(/ /g, '_').replace('ё', 'е') + '.jpg');
                 imgDiv.innerHTML = `<img src="/static/images/${imgName}" style="max-width: 100%; max-height: 350px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" onerror="this.style.display='none'">`;
             }
             else if (data.game_type === 'guess_description') {
