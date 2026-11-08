@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра «Угадай минерал»</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <div class="header">
+        <span>👤 {{ username }}</span>
+        <div>
+            <a href="/stats">📊 Статистика</a>
+            {% if session.get('role') == 'admin' %}
+                <a href="/admin" style="color: #f39c12;">👑 Админ</a>
+            {% endif %}
+            <a href="/logout">🚪 Выйти</a>
+        </div>
+    </div>
+
+    <!-- Экран выбора режима -->
+    <div class="game-container" id="menu-view">
+        <h2>Выберите режим игры:</h2>
+        <button onclick="startGame('guess_photo')">📸 По фото</button>
+        <button onclick="startGame('guess_description')">🎯 По описанию</button>
+        <button onclick="startGame('guess_formula')">🔬 По формуле</button>
+        <button onclick="startGame('quiz')">❓ Викторина</button>
+    </div>
+
+    <!-- Экран самой игры -->
+    <div class="game-container" id="play-view" style="display:none;">
+        <h2 id="round-title">Раунд 1 из 5</h2>
+
+        <!-- Блок для картинки (только для режима "По фото") -->
+        <div id="image-container" style="margin: 20px 0;"></div>
+
+        <!-- Блок с текстом (подсказка, описание, формула или вопрос) -->
+        <div id="mineral-info"></div>
+
+        <!-- Поле ввода и кнопка (скрываются после ответа) -->
+        <div id="input-area" style="margin-top: 20px;">
+            <input type="text" id="answer-input" placeholder="Введите ответ..." autocomplete="off">
+            <button onclick="submitAnswer()" id="submit-btn">Ответить</button>
+        </div>
+
+        <!-- Блок с результатом и кнопкой "Далее" -->
+        <div id="result-box" style="display:none; margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        let currentMode = '';
+
+        // Запуск игры
+        function startGame(mode) {
+            currentMode = mode;
+            fetch('/api/start_game', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({mode: mode})
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('menu-view').style.display = 'none';
+                document.getElementById('play-view').style.display = 'block';
+                renderRound(data);
+            })
+            .catch(err => {
+                alert("Ошибка при запуске игры: " + err);
+            });
+        }
+
+        // Отрисовка раунда (картинка, текст, сброс полей)
+        function renderRound(data) {
+            document.getElementById('round-title').innerText = `Раунд ${data.questions_asked + 1} из ${data.max_questions}`;
+            document.getElementById('result-box').style.display = 'none';
+            document.getElementById('input-area').style.display = 'block';
+
+            const input = document.getElementById('answer-input');
+            input.value = '';
+            input.focus();
+
+            const infoDiv = document.getElementById('mineral-info');
+            const imgDiv = document.getElementById('image-container');
+
+            // Очищаем предыдущие данные
+            infoDiv.innerHTML = '';
+            imgDiv.innerHTML = '';
+
+            const item = data.current_mineral;
+
+            if (data.game_type === 'guess_photo') {
+                infoDiv.innerHTML = `<p>💡 Подсказка: ${item.hints[0]}</p>`;
+                // Формируем имя картинки на основе названия минерала
+                // (например, "Халькопирит" -> "халькопирит.jpg")
+                const imgName = item.name.toLowerCase().replace(/ /g, '_').replace('ё', 'е') + '.jpg';
+                imgDiv.innerHTML = `<img src="/static/images/${imgName}" style="max-width: 100%; max-height: 350px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" onerror="this.style.display='none'">`;
+            }
+            else if (data.game_type === 'guess_description') {
+                infoDiv.innerHTML = `
+                    <div style="text-align: left; background: #f9f9f9; padding: 20px; border-radius: 10px; display: inline-block; min-width: 250px;">
+                        <p><b>Класс:</b> ${item.mineral_class}</p>
+                        <p><b>Твёрдость:</b> ${item.hardness}</p>
+                        <p><b>Цвет:</b> ${item.color}</p>
+                        <p><b>Блеск:</b> ${item.luster}</p>
+                        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
+                        <p>💡 <i>Подсказка: ${item.hints[0]}</i></p>
+                    </div>
+                `;
+            }
+            else if (data.game_type === 'guess_formula') {
+                infoDiv.innerHTML = `<h3 style="font-size: 36px; color: #2c3e50; margin: 10px 0;">${item.formula}</h3><p>Как называется этот минерал?</p>`;
+            }
+            else if (data.game_type === 'quiz') {
+                infoDiv.innerHTML = `<h3 style="font-size: 22px; margin: 20px 0;">${item.question}</h3>`;
+            }
+        }
+
+        // Отправка ответа
+        function submitAnswer() {
+            const answer = document.getElementById('answer-input').value;
+            if (!answer) return;
+
+            fetch('/api/check_answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({answer: answer})
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('input-area').style.display = 'none';
+                const resBox = document.getElementById('result-box');
+                resBox.style.display = 'block';
+
+                let html = '';
+                if (data.correct) {
+                    html += `<h3 style="color: #27ae60; font-size: 24px;">✅ Правильно! +${data.points} очков</h3>`;
+                } else {
+                    html += `<h3 style="color: #e74c3c; font-size: 24px;">❌ Неправильно! Это был ${data.correct_answer}</h3>`;
+                }
+
+                if(data.fact) {
+                    html += `<div style="background: #fff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #3498db;">
+                                <p><b>📚 Факт:</b> ${data.fact}</p>
+                             </div>`;
+                }
+
+                html += `<p style="font-size: 18px; margin-top: 15px;">Текущий счёт: <b>${data.score}</b></p>`;
+
+                // Кнопка перехода
+                if (data.is_end) {
+                    // Если игра окончена - ведем в меню
+                    html += `<button onclick="window.location.href='/menu'" style="background-color: #e67e22;">В главное меню</button>`;
+                } else {
+                    // Если есть следующий раунд - показываем кнопку "Далее"
+                    html += `<button onclick="nextRound()">Далее ➡️</button>`;
+                }
+                resBox.innerHTML = html;
+            });
+        }
+
+        // Переход к следующему раунду
+        function nextRound() {
+            fetch('/api/next_round', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) {
+                    alert(data.error);
+                    window.location.href = '/menu';
+                } else {
+                    renderRound(data);
+                }
+            });
+        }
+
+        // Позволяем нажимать Enter вместо кнопки
+        document.getElementById('answer-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
