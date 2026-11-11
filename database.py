@@ -6,31 +6,133 @@ import os
 
 DB_NAME = 'school_game.db'
 STUDENTS_FILE = 'students.txt'
-PASSWORDS_FILE = 'passwords.txt'
+
+# ЗАФИКСИРОВАННЫЕ ПАРОЛИ (логин: пароль)
+FIXED_PASSWORDS = {
+    'абмайкина_анна': 'h2yttp',
+    'агафонов_андрей': 'olbffm',
+    'верхошапов_максим': 'ehoc7g',
+    'гайдук_дмитрий': 'nf43j0',
+    'гойло_иван': '8do96m',
+    'гранский_данил': 'igvole',
+    'егоров_александр': '56r9mf',
+    'захаров_максим': '6atu4k',
+    'захаров_матвей': 'wb9n9a',
+    'комаровских_данил': 'g939wg',
+    'кряжева_вероника': 'pphxd3',
+    'кузнецов_пётр': 'd35y73',
+    'ларионов_матвей': '07q4ep',
+    'лемеш_владислав': 'ycqngr',
+    'луценко_дарья': '5isw1o',
+    'макаров_николай': 'o2hiie',
+    'малютин_андрей': '0if5gw',
+    'манц_максим': 'lqbwec',
+    'мельников_павел': 'dsm18d',
+    'мердеева_лидия': 'txzvp8',
+    'орлов_никита': 'r8zjrp',
+    'пронин_георгий': '5svtt5',
+    'родионов_иван': 'vdiiim',
+    'савельев_сергей': 'dgk5eu',
+    'сакиров_руслан': '9bczhs',
+    'сараева_светлана': 'l0od1a',
+    'сбродов_тимофей': 'zerk66',
+    'фусс_денис': '4odv1x',
+    'хамматов_ислам': 'l0qitq',
+    'яблонский_денис': 'qouifr',
+    'аканаева_алиса': '6cplz9',
+    'андронов_евгений': 'pbcf7n',
+    'арсаев_константин': 'l21iy0',
+    'бардаченко_александра': 'mqnny9',
+    'бурдаков_глеб': 'o3kuod',
+    'камелина_анна': '6obp4q',
+    'колмогорова_софья': '969j1t',
+    'коротаев_антон': 'm907yo',
+    'корякина_софия': 'g9owq5',
+    'кручинин_илья': '4ztw6w',
+    'митяев_роман': '8419od',
+    'мозырев_вадим': '3ugoau',
+    'новиков_захар': 'aq5n1y',
+    'овчинников_виктор': 'th2zsn',
+    'орлова_ангелина': 'xle8f3',
+    'палий_полина': 'jriohj',
+    'погребняк_мария': 'x9v3dc',
+    'поздеева_софья': 'r8gc66',
+    'политова_юлия': 'c9vhrq',
+    'потапова_кира': 'dyn9yd',
+    'садыгова_лейла': 'hbmot7',
+    'сингаевский_роман': 'iauprl',
+    'сязи_дмитрий': 'xnl01b',
+    'трошина_анастасия': 's30ccc',
+    'ульянов_константин': 'fbsldz',
+    'фаттахов_никита': '1xkryb',
+    'хундякова_алина': '3rh4yf',
+    'чепелев_алексей': 'ehrano',
+    'юдашкин_александр': 'gtgt6y',
+    'янц_мария': 'yl6mbo',
+    'арсеньева_анна': 's42y05',
+    'бикташев_артур': 'o3iwmu',
+    'боровкова_анна': '23n5p9',
+    'гончарова_полина': 'gjevse',
+    'даутова_диана': 'ml8ky0',
+    'дещеня_марк': 'nzpohq',
+    'зелева_эвелина': '6cvxro',
+    'иванчишин_надежда': '8ovfit',
+    'иванюхина_дарья': 'pmy2op',
+    'кожина_анна': '5f8ie3',
+    'коротков_александр': 'zzlifv',
+    'корякина_анастасия': 'g3oqms',
+    'коряков_даниил': 'twvv8c',
+    'костюкова_ирина': '22zpg9',
+    'летушов_евгений': 'yrivn5',
+    'масленников_владислав': 'ibzpzk',
+    'николаев_глеб': 'sg4hkq',
+    'оборин_даниил': 'b51dvn',
+    'овчинников_дмитрий': 'o8uv9g',
+    'парамонов_прохор': '3zg76w',
+    'петрова_ксения': 'm9acq2',
+    'почтарёва_валерия': 'l3csqy',
+    'рехачев_тимофей': 'dze23k',
+    'соловьева_екатерина': 'rx40dp',
+    'степанов_илья': 'k0d74f',
+    'усакина_виктория': 'blg6j2',
+    'фомин_кирилл': '6qy9uu',
+    'фрикцел_максим': 'zjjdh0',
+    'чунихина_арина': '4j8ope',
+    'энгельман_наталья': 'too4f3',
+    'арсибекова_александра': 'yil15a',
+    'белова_лилия': '36v00j',
+    'бранзбург_алексей': 'm2r5go',
+    'волков_арсений': 'tpn8b4',
+    'григорьев_георгий': 'xoz5iy',
+    'гук_влада': '2v3nnh',
+    'евграфов_даниил': 'fuiwwu',
+    'ермаков_павел': 'czrh7h',
+    'завада_ольга': 'on48rq',
+    'истигнеева_арина': 'sv97x1',
+    'кадочкин_иван': 'zk39sl',
+    'касиев_тимур': 'yrsns9',
+    'кириченко_валерия': 'kali9h',
+    'кравец_сергей': '89mmh8',
+    'куценко_никита': 'lqvb1b',
+    'лисеенко_анастасия': 'dbuxt8',
+    'михайлов_александр': 'aylno6',
+    'москвина_анастасия': 'jogsxo',
+    'мухин_никита': '9ot5kz',
+    'налобин_павел': 'dfrtyi',
+    'поступинский_александр': 'it31sa',
+    'рамазанова_кунсулу': 'n9j1q3',
+    'рахимова_элина': 'f3d3h4',
+    'риффель_арина': 'nj3c98',
+    'сальникова_карина': 'x7mx3c',
+    'солотина_валерий': 'q6cogp',
+    'третьяк_денис': 'ltqdim',
+    'хакова_арина': '5w8msp',
+    'храмов_евсей': 'k82fxj',
+    'хусаинова_валерия': 'ofie15',
+}
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
-
-def load_saved_passwords():
-    """Читает сохраненные пароли из файла."""
-    passwords = {}
-    if os.path.exists(PASSWORDS_FILE):
-        with open(PASSWORDS_FILE, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split('|')
-                if len(parts) >= 2:
-                    username = parts[0].strip()
-                    password = parts[1].strip()
-                    passwords[username] = password
-    return passwords
-
-def save_password(username, password, full_name):
-    """Сохраняет логин и пароль в файл."""
-    with open(PASSWORDS_FILE, 'a', encoding='utf-8') as f:
-        f.write(f"{username} | {password} | {full_name}\n")
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -63,14 +165,13 @@ def init_db():
     # Проверяем, есть ли пользователи в базе
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        # Создаем учителя (если его еще нет)
-        teacher_password = "Mineral_Admin_2026!"
+        # Создаем учителя
         cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", 
-                       ("teacher", hash_password(teacher_password), "admin"))
+                       ("teacher", hash_password("Mineral_Admin_2026!"), "admin"))
         
         print("\n=== УЧИТЕЛЬ СОЗДАН ===")
-        print(f"Логин: teacher")
-        print(f"Пароль: {teacher_password}")
+        print("Логин: teacher")
+        print("Пароль: Mineral_Admin_2026!")
         print("======================\n")
 
         # Читаем список учеников
@@ -78,11 +179,6 @@ def init_db():
             print(f"Чтение списка учеников из {STUDENTS_FILE}...")
             with open(STUDENTS_FILE, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-            
-            # Загружаем ранее сохраненные пароли (если есть)
-            saved_passwords = load_saved_passwords()
-            if saved_passwords:
-                print(f"Найдены сохраненные пароли в {PASSWORDS_FILE}. Используем их.")
             
             print("\n=== СГЕНЕРИРОВАННЫЕ АККАУНТЫ УЧЕНИКОВ ===")
             count = 0
@@ -99,13 +195,11 @@ def init_db():
                 else:
                     username = line.lower().replace(' ', '_')
                 
-                # Если пароль уже сохранен — используем его. Иначе генерируем новый.
-                if username in saved_passwords:
-                    password = saved_passwords[username]
-                else:
+                # Берем пароль из зафиксированного словаря, если есть
+                password = FIXED_PASSWORDS.get(username)
+                if not password:
                     password = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-                    # Сохраняем новый пароль в файл
-                    save_password(username, password, line)
+                    print(f"⚠️ Для {username} нет зафиксированного пароля. Сгенерирован новый: {password}")
                 
                 try:
                     cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", 
