@@ -60,7 +60,14 @@ def game_menu():
 def reference():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('reference.html', minerals=MINERALS_DB, username=session['username'])
+
+    minerals_with_images = []
+    for mineral in MINERALS_DB:
+        mineral_copy = mineral.copy()
+        mineral_copy['real_image'] = get_real_image_name(mineral['name'])
+        minerals_with_images.append(mineral_copy)
+
+    return render_template('reference.html', minerals=minerals_with_images, username=session['username'])
 
 
 @app.route('/stats')
@@ -79,10 +86,6 @@ def admin():
     return render_template('admin.html', modes=modes, recent_games=recent_games)
 
 
-# ==========================================
-# API ДЛЯ ИГРЫ
-# ==========================================
-
 @app.route('/api/start_game', methods=['POST'])
 def api_start_game():
     if 'user_id' not in session:
@@ -92,7 +95,6 @@ def api_start_game():
     game_state = game_logic.start_new_game(mode)
     session['game_state'] = game_state
 
-    # Если это викторина, сразу подгружаем первый вопрос
     if mode == 'quiz':
         question = game_logic.get_quiz_question([])
         game_state['current_question'] = question
@@ -108,7 +110,6 @@ def api_start_game():
             "current_mineral": question
         }
 
-    # Если это режим "По фото", находим реальное имя файла картинки
     if mode == 'guess_photo':
         game_state['current_mineral']['real_image'] = get_real_image_name(game_state['current_mineral']['name'])
         session['game_state'] = game_state
@@ -174,7 +175,6 @@ def api_check_answer():
             game_state['used_minerals'].append(next_mineral['name'])
             game_state['hints_used'] = 0
     else:
-        # Переводим названия режимов на русский для статистики
         mode_names = {
             'guess_photo': 'По фото',
             'guess_description': 'По описанию',
@@ -212,7 +212,6 @@ def api_next_round():
         display_item = {"question": current_item['question']}
     else:
         display_item = game_state['current_mineral']
-        # ВАЖНО: Если это режим "По фото", ищем картинку для нового раунда!
         if game_type == 'guess_photo':
             display_item['real_image'] = get_real_image_name(display_item['name'])
             game_state['current_mineral'] = display_item
