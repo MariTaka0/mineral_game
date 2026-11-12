@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Справочник минералов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Стили для переворачивающихся карточек */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .flip-card {
+            background-color: transparent;
+            width: 200px;
+            height: 300px;
+            perspective: 1000px; /* Глубина 3D-эффекта */
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        /* Переворот при клике (класс добавляется через JS) */
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        /* Лицевая сторона (с фото) */
+        .flip-card-front {
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flip-card-front img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .flip-card-front h3 {
+            margin: 10px 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        /* Обратная сторона (со свойствами) */
+        .flip-card-back {
+            background-color: #2c3e50;
+            color: white;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 15px;
+            text-align: left;
+            font-size: 12px;
+            overflow-y: auto;
+        }
+
+        .flip-card-back p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+
+        .flip-card-back strong {
+            color: #f1c40f;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span>👤 {{ username }}</span>
+        <div>
+            <a href="/menu">🎮 В меню</a>
+            <a href="/logout">🚪 Выйти</a>
+        </div>
+    </div>
+
+    <h2 style="text-align: center; margin-top: 20px;">📖 Справочник минералов</h2>
+    <p style="text-align: center; color: #666;">Нажми на карточку, чтобы увидеть свойства</p>
+
+    <div class="cards-grid">
+        {% for m in minerals %}
+        <div class="flip-card" onclick="this.classList.toggle('flipped')">
+            <div class="flip-card-inner">
+                <!-- Лицевая сторона: Фото и название -->
+                <div class="flip-card-front">
+                    <img src="/static/images/{{ m.real_image if m.real_image is defined else (m.name.lower().replace(' ', '_').replace('ё', 'е') + '.jpg') }}" 
+                         alt="{{ m.name }}"
+                         onerror="this.src='https://via.placeholder.com/200x200?text=Нет+фото'">
+                    <h3>{{ m.name }}</h3>
+                </div>
+
+                <!-- Обратная сторона: Свойства и описание -->
+                <div class="flip-card-back">
+                    <h4 style="margin: 0 0 10px 0; color: #f1c40f;">{{ m.name }}</h4>
+                    <p><strong>Формула:</strong> {{ m.formula }}</p>
+                    <p><strong>Класс:</strong> {{ m.mineral_class }}</p>
+                    <p><strong>Твёрдость:</strong> {{ m.hardness }}</p>
+                    <p><strong>Цвет:</strong> {{ m.color }}</p>
+                    <p><strong>Блеск:</strong> {{ m.luster }}</p>
+                    <p><strong>Спайность:</strong> {{ m.cleavage }}</p>
+                    <p><strong>Плотность:</strong> {{ m.density }}</p>
+                    <p><strong>Происхождение:</strong> {{ m.genesis }}</p>
+                    <p><strong>Применение:</strong> {{ m.application }}</p>
+                    <p><strong>Месторождения:</strong> {{ m.deposits }}</p>
+                    {% if m.note and m.note != '—' %}
+                    <p><strong>Примечание:</strong> {{ m.note }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
