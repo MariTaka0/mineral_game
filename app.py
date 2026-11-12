@@ -56,6 +56,13 @@ def game_menu():
     return render_template('game.html', username=session['username'])
 
 
+@app.route('/reference')
+def reference():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('reference.html', minerals=MINERALS_DB, username=session['username'])
+
+
 @app.route('/stats')
 def stats():
     if 'user_id' not in session:
@@ -104,7 +111,7 @@ def api_start_game():
     # Если это режим "По фото", находим реальное имя файла картинки
     if mode == 'guess_photo':
         game_state['current_mineral']['real_image'] = get_real_image_name(game_state['current_mineral']['name'])
-        session['game_state'] = game_state # Обновляем сессию с новым именем картинки
+        session['game_state'] = game_state
 
     return game_state
 
@@ -208,7 +215,6 @@ def api_next_round():
         # ВАЖНО: Если это режим "По фото", ищем картинку для нового раунда!
         if game_type == 'guess_photo':
             display_item['real_image'] = get_real_image_name(display_item['name'])
-            # Сохраняем обновленное состояние в сессию, чтобы при следующем запросе картинка не потерялась
             game_state['current_mineral'] = display_item
             session['game_state'] = game_state
 
