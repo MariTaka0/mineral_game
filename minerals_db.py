@@ -1,28 +1,28 @@
 # minerals_db.py
 # База данных минералов для игры «Угадай минерал»
 import os
+import re
 
 def get_real_image_name(mineral_name):
-    """Ищет реальный файл картинки в папке static/images"""
-    # Приводим название к нижнему регистру, меняем пробелы на подчеркивания
-    base_name = mineral_name.lower().replace(' ', '_').replace('ё', 'е')
+    # Приводим к нижнему регистру и заменяем все пробелы и подчеркивания на пустоту
+    # для гибкого сравнения (например, "Роговая обманка" и "роговая_обманка" станут "роговаяобманка")
+    base_name = re.sub(r'[\s_]', '', mineral_name.lower())
     
-    # Путь к папке с картинками
     img_dir = os.path.join('static', 'images')
     
     if os.path.exists(img_dir):
         for filename in os.listdir(img_dir):
-            # Приводим имя файла к нижнему регистру для сравнения
             file_lower = filename.lower()
-            # Отделяем имя от расширения (например, "пирит" и ".jpg")
             name_only, ext = os.path.splitext(file_lower)
+            # Очищаем имя файла так же, как и название минерала
+            file_clean = re.sub(r'[\s_]', '', name_only)
             
-            # Если имя совпадает (без учета расширения) — возвращаем реальное имя файла
-            if name_only == base_name:
+            # Сравниваем очищенные версии
+            if file_clean == base_name:
                 return filename
-    
-    # Если ничего не нашли, возвращаем заглушку (или можно вернуть стандартное имя)
-    return f"{base_name}.jpg"
+                
+    # Если не нашли, возвращаем стандартное имя (с подчеркиваниями)
+    return mineral_name.lower().replace(' ', '_') + '.jpg'
     
 MINERALS_DB = [
     # ============ САМОРОДНЫЕ ============
