@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кто ты из минералов?</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="game-page">
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <a href="{{ url_for('game_menu') }}" class="logo-link">💎 Угадай минерал</a>
+        </div>
+        <div class="top-bar-right">
+            <a href="{{ url_for('game_menu') }}" class="btn btn-ghost">🎮 Игра</a>
+            <a href="{{ url_for('reference') }}" class="btn btn-ghost">📖 Справочник</a>
+            <a href="{{ url_for('stats') }}" class="btn btn-ghost">📊 Статистика</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-ghost">🚪 Выход</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        {# ===== СТАРТ ===== #}
+        {% if stage == 'start' %}
+        <div class="personality-start">
+            <div class="personality-hero">
+                <div class="hero-icon">🔮</div>
+                <h1 class="page-title">Кто ты из минералов?</h1>
+                <p class="page-subtitle">
+                    Психологический тест на 10 вопросов. Ответь честно — и узнаешь,
+                    какой минерал скрывается в твоей душе.
+                </p>
+
+                <div class="personality-info-cards">
+                    <div class="info-card">
+                        <div class="info-icon">📝</div>
+                        <h4>10 вопросов</h4>
+                        <p>О привычках, характере и ценностях</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">⏱️</div>
+                        <h4>2–3 минуты</h4>
+                        <p>Быстро и без подготовки</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">💎</div>
+                        <h4>15 минералов</h4>
+                        <p>Один из них — точно ты</p>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('personality_test') }}" class="btn btn-primary btn-lg">
+                    🚀 Начать тест
+                </a>
+            </div>
+        </div>
+
+        {# ===== ВОПРОСЫ ===== #}
+        {% elif stage == 'quiz' %}
+        <div class="personality-quiz">
+            <div class="quiz-progress-bar">
+                <div class="quiz-progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="quiz-progress-text">
+                Вопрос <span id="current-q">1</span> из {{ questions|length }}
+            </p>
+
+            <div id="question-container">
+                {# Вопросы рендерятся JS #}
+            </div>
+
+            <div class="quiz-nav">
+                <button id="back-btn" class="btn btn-secondary" style="display:none;">← Назад</button>
+                <span></span>
+            </div>
+        </div>
+
+        <form id="result-form" method="POST" action="{{ url_for('personality_result') }}" style="display:none;">
+            <input type="hidden" name="answers" id="answers-input">
+        </form>
+
+        <script>
+        const questions = {{ questions|tojson }};
+        const totalQ = questions.length;
+        let currentQ = 0;
+        const answers = {};  // {qIndex: optionIndex}
+
+        const container = document.getElementById('question-container');
+        const progressFill = document.getElementById('progress-fill');
+        const currentQLabel = document.getElementById('current-q');
+        const backBtn = document.getElementById('back-btn');
+        const resultForm = document.getElementById('result-form');
+        const answersInput = document.getElementById('answers-input');
+
+        function renderQuestion() {
+            const q = questions[currentQ];
+            progressFill.style.width = ((currentQ) / totalQ * 100) + '%';
+            currentQLabel.textContent = currentQ + 1;
+
+            let html = `<h2 class="personality-question">${q.question}</h2>`;
+            html += '<div class="options-list">';
+            q.options.forEach((opt, idx) => {
+                const selected = answers[currentQ] === idx ? 'selected' : '';
+                html += `
+                    <button type="button" class="option-card ${selected}" data-opt="${idx}">
+                        <span class="option-letter">${String.fromCharCode(65 + idx)}</span>
+                        <span class="option-text">${opt.text}</span>
+                    </button>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            container.querySelectorAll('.option-card').forEach(btn => {
+                btn.addEventListener('click', () => selectOption(parseInt(btn.dataset.opt)));
+            });
+
+            backBtn.style.display = currentQ > 0 ? 'inline-block' : 'none';
+        }
+
+        function selectOption(optIdx) {
+            answers[currentQ] = optIdx;
+            // подсветка выбора
+            container.querySelectorAll('.option-card').forEach(b => b.classList.remove('selected'));
+            container.querySelector(`.option-card[data-opt="${optIdx}"]`).classList.add('selected');
+
+            setTimeout(() => {
+                if (currentQ < totalQ - 1) {
+                    currentQ++;
+                    renderQuestion();
+                } else {
+                    finishTest();
+                }
+            }, 300);
+        }
+
+        function finishTest() {
+            progressFill.style.width = '100%';
+            answersInput.value = JSON.stringify(answers);
+            resultForm.submit();
+        }
+
+        backBtn.addEventListener('click', () => {
+            if (currentQ > 0) {
+                currentQ--;
+                renderQuestion();
+            }
+        });
+
+        renderQuestion();
+        </script>
+
+        {# ===== РЕЗУЛЬТАТ ===== #}
+        {% elif stage == 'result' %}
+        <div class="personality-result">
+            <div class="result-hero">
+                <div class="result-badge">Твой минерал</div>
+                <h1 class="result-title">{{ result.title }}</h1>
+                <p class="result-subtitle">{{ result.subtitle }}</p>
+            </div>
+
+            <div class="result-body">
+                <div class="result-image-wrap">
+                    <img src="{{ url_for('static', filename='images/' + result.image) }}"
+                         alt="{{ result.title }}"
+                         class="result-image"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="result-placeholder" style="display:none;">💎</div>
+                </div>
+
+                <div class="result-info">
+                    <p class="result-description">{{ result.description }}</p>
+
+                    <div class="result-traits">
+                        {% for trait in result.traits %}
+                        <span class="trait-tag">{{ trait }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="result-fact">
+                        <strong>💡 Интересный факт:</strong>
+                        <p>{{ result.fact }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if top3|length > 1 %}
+            <div class="result-top3">
+                <h3>Твои близкие результаты</h3>
+                <div class="top3-list">
+                    {% for item in top3 %}
+                    <div class="top3-item">
+                        <span class="top3-rank">#{{ loop.index }}</span>
+                        <span class="top3-name">{{ item.title }}</span>
+                        <span class="top3-points">{{ item.points }} очк.</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="result-actions">
+                <a href="{{ url_for('personality_start') }}" class="btn btn-primary">🔄 Пройти заново</a>
+                <a href="{{ url_for('game_menu') }}" class="btn btn-secondary">🎮 В меню игры</a>
+                <a href="{{ url_for('reference') }}" class="btn btn-secondary">📖 Справочник</a>
+            </div>
+        </div>
+        {% endif %}
+
+    </main>
+</body>
+</html>
