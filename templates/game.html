@@ -3,179 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игра «Угадай минерал»</title>
+    <title>Угадай минерал — Игра</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <!-- Шапка сайта -->
-    <div class="header">
-        <span>👤 {{ username }}</span>
-        <div>
-            <a href="/stats">📊 Статистика</a>
-            {% if session.get('role') == 'admin' %}
-                <a href="/admin" style="color: #f39c12;">👑 Админ</a>
+<body class="game-page">
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <a href="{{ url_for('game_menu') }}" class="logo-link">💎 Угадай минерал</a>
+        </div>
+        <div class="top-bar-right">
+            <span class="user-name">👤 {{ session.username }}</span>
+            <a href="{{ url_for('reference') }}" class="btn btn-ghost">📖 Справочник</a>
+            <a href="{{ url_for('stats') }}" class="btn btn-ghost">📊 Статистика</a>
+            <a href="{{ url_for('personality_start') }}" class="btn btn-ghost">🔮 Кто ты?</a>
+            {% if session.role == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="btn btn-ghost">⚙️ Админ</a>
             {% endif %}
-            <a href="/logout">🚪 Выйти</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-ghost">🚪 Выход</a>
         </div>
-    </div>
+    </header>
 
-    <!-- Экран выбора режима -->
-    <div class="game-container" id="menu-view">
-        <h2>Выберите режим игры:</h2>
-        <button onclick="startGame('guess_photo')">📸 По фото</button>
-        <button onclick="startGame('guess_description')">🎯 По описанию</button>
-        <button onclick="startGame('guess_formula')">🔬 По формуле</button>
-        <button onclick="startGame('quiz')">❓ Викторина</button>
-        <button onclick="window.location.href='/reference'" style="background-color: #e67e22; margin-top: 15px;">📖 Справочник минералов</button>
-    </div>
+    <main class="main-content">
 
-    <!-- Экран самой игры -->
-    <div class="game-container" id="play-view" style="display:none;">
-        <h2 id="round-title">Раунд 1 из 5</h2>
+        {% if stage == 'menu' %}
+        <div class="menu-container">
+            <h1 class="menu-title">Выберите режим игры</h1>
+            <p class="menu-subtitle">5 вопросов в каждом раунде</p>
 
-        <!-- Блок для картинки (только для режима "По фото") -->
-        <div id="image-container" style="margin: 20px 0;"></div>
+            <div class="modes-grid">
+                <a href="{{ url_for('start_game', game_type='guess_photo') }}" class="mode-card">
+                    <div class="mode-icon">🖼️</div>
+                    <h3>Угадай по фото</h3>
+                    <p>Определи минерал по изображению</p>
+                </a>
 
-        <!-- Блок с текстом (подсказка, описание, формула или вопрос) -->
-        <div id="mineral-info"></div>
+                <a href="{{ url_for('start_game', game_type='guess_description') }}" class="mode-card">
+                    <div class="mode-icon">📝</div>
+                    <h3>Угадай по описанию</h3>
+                    <p>Определи минерал по характеристикам</p>
+                </a>
 
-        <!-- Поле ввода и кнопка (скрываются после ответа) -->
-        <div id="input-area" style="margin-top: 20px;">
-            <input type="text" id="answer-input" placeholder="Введите ответ..." autocomplete="off">
-            <button onclick="submitAnswer()" id="submit-btn">Ответить</button>
+                <a href="{{ url_for('start_game', game_type='guess_formula') }}" class="mode-card">
+                    <div class="mode-icon">🧪</div>
+                    <h3>Угадай по формуле</h3>
+                    <p>Определи минерал по химической формуле</p>
+                </a>
+
+                <a href="{{ url_for('start_game', game_type='quiz') }}" class="mode-card">
+                    <div class="mode-icon">❓</div>
+                    <h3>Викторина</h3>
+                    <p>Ответь на вопросы о минералах</p>
+                </a>
+
+                <a href="{{ url_for('personality_start') }}" class="mode-card mode-card-extra">
+                    <div class="mode-icon">🔮</div>
+                    <h3>Кто ты из минералов?</h3>
+                    <p>Психологический тест — не для баллов</p>
+                </a>
+            </div>
         </div>
 
-        <!-- Блок с результатом и кнопкой "Далее" -->
-        <div id="result-box" style="display:none; margin-top: 20px;"></div>
-    </div>
+        {% elif stage == 'play' %}
+        <div class="game-container">
+            <div class="game-header">
+                <span class="progress-badge">Вопрос {{ question_num }} из {{ game.max_questions }}</span>
+                <span class="score-badge">⭐ {{ game.score }} баллов</span>
+            </div>
+
+            <div class="game-body">
+                {% if game.game_type == 'guess_photo' %}
+                <div class="photo-block">
+                    <img src="{{ url_for('static', filename='images/' + image_file) }}"
+                         alt="Минерал" class="mineral-photo"
+                         onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+                </div>
+                {% elif game.game_type == 'guess_description' %}
+                <div class="description-block">
+                    <h3>Характеристики минерала</h3>
+                    <table class="mineral-props">
+                        <tr><th>Тип</th><td>{{ mineral.mineral_type }}</td></tr>
+                        <tr><th>Класс</th><td>{{ mineral.mineral_class }}</td></tr>
+                        <tr><th>Группа</th><td>{{ mineral.mineral_group }}</td></tr>
+                        <tr><th>Сингония</th><td>{{ mineral.crystal_system }}</td></tr>
+                        <tr><th>Габитус</th><td>{{ mineral.habit }}</td></tr>
+                        <tr><th>Агрегаты</th><td>{{ mineral.aggregate }}</td></tr>
+                        <tr><th>Твёрдость</th><td>{{ mineral.hardness }}</td></tr>
+                        <tr><th>Спайность</th><td>{{ mineral.cleavage }}</td></tr>
+                        <tr><th>Излом</th><td>{{ mineral.fracture }}</td></tr>
+                        <tr><th>Плотность</th><td>{{ mineral.density }}</td></tr>
+                        <tr><th>Цвет</th><td>{{ mineral.color }}</td></tr>
+                        <tr><th>Цвет черты</th><td>{{ mineral.streak }}</td></tr>
+                        <tr><th>Блеск</th><td>{{ mineral.luster }}</td></tr>
+                        <tr><th>Прозрачность</th><td>{{ mineral.transparency }}</td></tr>
+                        <tr><th>Люминесценция</th><td>{{ mineral.luminescence }}</td></tr>
+                        <tr><th>Особые свойства</th><td>{{ mineral.specific }}</td></tr>
+                        <tr><th>Генезис</th><td>{{ mineral.genesis }}</td></tr>
+                        <tr><th>Применение</th><td>{{ mineral.application }}</td></tr>
+                        <tr><th>Месторождения</th><td>{{ mineral.deposits }}</td></tr>
+                        <tr><th>Примечание</th><td>{{ mineral.note }}</td></tr>
+                    </table>
+                </div>
+                {% elif game.game_type == 'guess_formula' %}
+                <div class="formula-block">
+                    <h3>Химическая формула</h3>
+                    <div class="formula-display">{{ mineral.formula }}</div>
+                </div>
+                {% endif %}
+
+                <div class="answer-block">
+                    <input type="text" id="answer-input" placeholder="Введите название минерала..."
+                           autocomplete="off" autofocus>
+                    <button id="submit-btn" class="btn btn-primary">Ответить</button>
+                    <button id="hint-btn" class="btn btn-secondary">💡 Подсказка ({{ game.hints_used }}/3)</button>
+                </div>
+
+                <div id="hint-area" class="hint-area"></div>
+                <div id="feedback-area" class="feedback-area"></div>
+            </div>
+        </div>
+
+        {% elif stage == 'play_quiz' %}
+        <div class="game-container">
+            <div class="game-header">
+                <span class="progress-badge">Вопрос {{ question_num }} из {{ game.max_questions }}</span>
+                <span class="score-badge">⭐ {{ game.score }} баллов</span>
+            </div>
+
+            <div class="game-body">
+                <div class="quiz-block">
+                    <h3 class="quiz-question">{{ question.question }}</h3>
+                </div>
+
+                <div class="answer-block">
+                    <input type="text" id="answer-input" placeholder="Введите ответ..."
+                           autocomplete="off" autofocus>
+                    <button id="submit-btn" class="btn btn-primary">Ответить</button>
+                </div>
+
+                <div id="feedback-area" class="feedback-area"></div>
+            </div>
+        </div>
+
+        {% elif stage == 'finished' %}
+        <div class="finish-container">
+            <div class="finish-card">
+                <h1 class="finish-title">Раунд завершён!</h1>
+
+                <div class="finish-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.score }}</div>
+                        <div class="stat-label">Баллов</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.questions_asked }}</div>
+                        <div class="stat-label">Вопросов</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ stats.accuracy }}%</div>
+                        <div class="stat-label">Точность</div>
+                    </div>
+                </div>
+
+                {% if achievements %}
+                <div class="achievements-block">
+                    <h3>🏆 Достижения</h3>
+                    <div class="achievements-list">
+                        {% for ach in achievements %}
+                        <div class="achievement-item">
+                            <span class="ach-icon">{{ ach.icon }}</span>
+                            <div>
+                                <strong>{{ ach.name }}</strong>
+                                <p>{{ ach.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="finish-actions">
+                    <a href="{{ url_for('game_menu') }}" class="btn btn-secondary">В меню</a>
+                    <a href="{{ url_for('start_game', game_type=game.game_type) }}" class="btn btn-primary">Играть снова</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
 
     <script>
-        let currentMode = '';
+    const input = document.getElementById('answer-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    const feedbackArea = document.getElementById('feedback-area');
+    const hintArea = document.getElementById('hint-area');
 
-        // Запуск игры
-        function startGame(mode) {
-            currentMode = mode;
-            fetch('/api/start_game', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({mode: mode})
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('menu-view').style.display = 'none';
-                document.getElementById('play-view').style.display = 'block';
-                renderRound(data);
-            })
-            .catch(err => {
-                alert("Ошибка при запуске игры: " + err);
-            });
-        }
+    function submitAnswer() {
+        const answer = input.value.trim();
+        if (!answer) return;
 
-        // Отрисовка раунда (картинка, текст, сброс полей)
-        function renderRound(data) {
-            document.getElementById('round-title').innerText = `Раунд ${data.questions_asked + 1} из ${data.max_questions}`;
-            document.getElementById('result-box').style.display = 'none';
-            document.getElementById('input-area').style.display = 'block';
+        input.disabled = true;
+        submitBtn.disabled = true;
 
-            const input = document.getElementById('answer-input');
-            input.value = '';
-            input.focus();
+        fetch('{{ url_for("guess") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'answer=' + encodeURIComponent(answer)
+        })
+        .then(r => r.json())
+        .then(data => {
+            feedbackArea.innerHTML = data.feedback;
+            feedbackArea.className = 'feedback-area ' + (data.correct ? 'feedback-correct' : 'feedback-wrong');
 
-            const infoDiv = document.getElementById('mineral-info');
-            const imgDiv = document.getElementById('image-container');
-
-            // Очищаем предыдущие данные
-            infoDiv.innerHTML = '';
-            imgDiv.innerHTML = '';
-
-            const item = data.current_mineral;
-
-            if (data.game_type === 'guess_photo') {
-                infoDiv.innerHTML = `<p>💡 Подсказка: ${item.hints[0]}</p>`;
-                const imgName = item.real_image || (item.name.toLowerCase().replace(/ /g, '_').replace('ё', 'е') + '.jpg');
-                imgDiv.innerHTML = `<img src="/static/images/${imgName}" style="max-width: 100%; max-height: 350px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" onerror="this.style.display='none'">`;
+            if (data.achievements && data.achievements.length) {
+                data.achievements.forEach(a => {
+                    feedbackArea.innerHTML += `<div class="ach-toast">${a.icon} ${a.name}: ${a.description}</div>`;
+                });
             }
-            else if (data.game_type === 'guess_description') {
-                infoDiv.innerHTML = `
-                    <div style="text-align: left; background: #f9f9f9; padding: 20px; border-radius: 10px; display: inline-block; min-width: 250px;">
-                        <p><b>Класс:</b> ${item.mineral_class}</p>
-                        <p><b>Твёрдость:</b> ${item.hardness}</p>
-                        <p><b>Цвет:</b> ${item.color}</p>
-                        <p><b>Блеск:</b> ${item.luster}</p>
-                        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
-                        <p>💡 <i>Подсказка: ${item.hints[0]}</i></p>
-                    </div>
-                `;
-            }
-            else if (data.game_type === 'guess_formula') {
-                infoDiv.innerHTML = `<h3 style="font-size: 36px; color: #2c3e50; margin: 10px 0;">${item.formula}</h3><p>Как называется этот минерал?</p>`;
-            }
-            else if (data.game_type === 'quiz') {
-                infoDiv.innerHTML = `<h3 style="font-size: 22px; margin: 20px 0;">${item.question}</h3>`;
-            }
-        }
 
-        // Отправка ответа
-        function submitAnswer() {
-            const answer = document.getElementById('answer-input').value;
-            if (!answer) return;
-
-            fetch('/api/check_answer', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({answer: answer})
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('input-area').style.display = 'none';
-                const resBox = document.getElementById('result-box');
-                resBox.style.display = 'block';
-
-                let html = '';
-                if (data.correct) {
-                    html += `<h3 style="color: #27ae60; font-size: 24px;">✅ Правильно! +${data.points} очков</h3>`;
-                } else {
-                    html += `<h3 style="color: #e74c3c; font-size: 24px;">❌ Неправильно! Это был ${data.correct_answer}</h3>`;
-                }
-
-                if(data.fact) {
-                    html += `<div style="background: #fff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #3498db;">
-                                <p><b>📚 Факт:</b> ${data.fact}</p>
-                             </div>`;
-                }
-
-                html += `<p style="font-size: 18px; margin-top: 15px;">Текущий счёт: <b>${data.score}</b></p>`;
-
-                // Кнопка перехода
-                if (data.is_end) {
-                    html += `<button onclick="window.location.href='/menu'" style="background-color: #e67e22;">В главное меню</button>`;
-                } else {
-                    html += `<button onclick="nextRound()">Далее ➡️</button>`;
-                }
-                resBox.innerHTML = html;
-            });
-        }
-
-        // Переход к следующему раунду
-        function nextRound() {
-            fetch('/api/next_round', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if(data.error) {
-                    alert(data.error);
-                    window.location.href = '/menu';
-                } else {
-                    renderRound(data);
-                }
-            });
-        }
-
-        // Позволяем нажимать Enter вместо кнопки
-        document.getElementById('answer-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                submitAnswer();
+            if (data.finished) {
+                setTimeout(() => { window.location.href = data.redirect; }, 1800);
+            } else {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2200);
             }
         });
+    }
+
+    if (submitBtn) submitBtn.addEventListener('click', submitAnswer);
+
+    if (input) {
+        input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') submitAnswer();
+        });
+    }
+
+    if (hintBtn) {
+        hintBtn.addEventListener('click', () => {
+            fetch('{{ url_for("hint") }}', {method: 'POST'})
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) return;
+                const p = document.createElement('p');
+                p.className = 'hint-text';
+                p.textContent = '💡 ' + data.hint;
+                hintArea.appendChild(p);
+                hintBtn.textContent = `💡 Подсказка (${data.hints_used}/3)`;
+            });
+        });
+    }
     </script>
 </body>
 </html>
