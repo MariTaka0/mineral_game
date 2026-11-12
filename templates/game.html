@@ -26,6 +26,7 @@
         <button onclick="startGame('guess_description')">🎯 По описанию</button>
         <button onclick="startGame('guess_formula')">🔬 По формуле</button>
         <button onclick="startGame('quiz')">❓ Викторина</button>
+        <button onclick="window.location.href='/reference'" style="background-color: #e67e22; margin-top: 15px;">📖 Справочник минералов</button>
     </div>
 
     <!-- Экран самой игры -->
@@ -91,9 +92,6 @@
 
             if (data.game_type === 'guess_photo') {
                 infoDiv.innerHTML = `<p>💡 Подсказка: ${item.hints[0]}</p>`;
-                // Формируем имя картинки на основе названия минерала
-                // (например, "Халькопирит" -> "халькопирит.jpg")
-                // Если сервер нашел точное имя файла, используем его
                 const imgName = item.real_image || (item.name.toLowerCase().replace(/ /g, '_').replace('ё', 'е') + '.jpg');
                 imgDiv.innerHTML = `<img src="/static/images/${imgName}" style="max-width: 100%; max-height: 350px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" onerror="this.style.display='none'">`;
             }
@@ -150,10 +148,8 @@
 
                 // Кнопка перехода
                 if (data.is_end) {
-                    // Если игра окончена - ведем в меню
                     html += `<button onclick="window.location.href='/menu'" style="background-color: #e67e22;">В главное меню</button>`;
                 } else {
-                    // Если есть следующий раунд - показываем кнопку "Далее"
                     html += `<button onclick="nextRound()">Далее ➡️</button>`;
                 }
                 resBox.innerHTML = html;
